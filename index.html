@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Python Learning Interface for Kids</title>
+    <!-- Include CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/theme/monokai.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; }
+        #editor { width: 50%; height: 500px; }
+        #output { width: 50%; padding: 10px; box-sizing: border-box; }
+        #controls { margin-bottom: 10px; }
+        #variables { margin-top: 10px; }
+        #turtleCanvas { border: 1px solid #ccc; }
+        .CodeMirror { font-family: monospace; font-size: 24px; height:auto; }
+    </style>
+</head>
+<body>
+
+<div id="editor"></div>
+
+<div id="output">
+    <div id="controls">
+        <button id="runButton">Run</button>
+    </div>
+    <div id="mycanvas"  height="500" width="800" style="border-style: solid;"></div>
+    <div id="variables">
+        <h3>Variables:</h3>
+        <pre id="varsDisplay">{}</pre>
+        <h3>Output:</h3>
+        <pre id="outDisplay"></pre>
+    </div>
+</div>
+
+<!-- Include CodeMirror JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/mode/python/python.min.js"></script>
+
+<!-- Include Skulpt -->
+<script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js"></script>
+
+<script>
+// Initialize CodeMirror editor
+var editor = CodeMirror(document.getElementById('editor'), {
+    mode: { name: "python" },
+    lineNumbers: true,
+    theme: "monokai",
+    value: "# Write your Python code here\nimport turtle\n\nt = turtle.Turtle()\nfor i in range(4):\n  print(i)\n  t.forward(100)\n  t.right(90)\n"
+});
+
+
+// Global variables
+var runButton = document.getElementById('runButton');
+var resetButton = document.getElementById('resetButton');
+var varsDisplay = document.getElementById('varsDisplay');
+var turtleCanvas = document.getElementById('turtleCanvas');
+var outDisplay = document.getElementById('outDisplay');
+
+// Configure Skulpt
+function builtinRead(x) {
+    if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
+        throw "File not found: '" + x + "'";
+    return Sk.builtinFiles["files"][x];
+}
+
+// Run execution
+function runExecution() {
+    var code = editor.getValue();
+    // Clear previous variables
+    varsDisplay.textContent = '{}';
+    outDisplay.textContent = "";
+    // Clear canvas
+
+    Sk.pre = "output";
+    Sk.configure({
+        output: function(text) { outDisplay.textContent += text; },
+        read: builtinRead,
+        python3: true,
+        __future__: Sk.python3,
+    });
+
+    // Handle turtle graphics
+    (Sk.TurtleGraphics || (Sk.TurtleGraphics = {})).target = 'mycanvas';
+
+    Sk.misceval.asyncToPromise(function() {
+        return Sk.importMainWithBody("<stdin>", false, code, true);
+    }).then(function(mod) {
+        // code ran successfully
+        updateVariables();
+    }, function(err) {
+        console.error(err.toString());
+        alert(err.toString());
+    });
+}
+
+// Update variables display
+function updateVariables() {
+    var globals = Sk.globals;
+    var displayVars = {};
+    for (var key in globals) {
+        if (globals.hasOwnProperty(key)) {
+          if (key[0] != "_") { displayVars[key] = Sk.ffi.remapToJs(globals[key]); }
+        }
+    }
+    varsDisplay.textContent = JSON.stringify(displayVars, null, 2);
+}
+
+// Reset the environment
+function resetEnvironment() {
+    varsDisplay.textContent = '{}';
+    var ctx = turtleCanvas.getContext('2d');
+    ctx.clearRect(0, 0, turtleCanvas.width, turtleCanvas.height);
+}
+
+// Event listeners
+runButton.addEventListener('click', function() {
+    runExecution();
+});
+
+/*
+resetButton.addEventListener('click', function() {
+    resetEnvironment();
+});
+*/
+</script>
+
+</body>
+</html>
+
