@@ -47,7 +47,7 @@ var editor = CodeMirror(document.getElementById('editor'), {
     mode: { name: "python" },
     lineNumbers: true,
     theme: "monokai",
-    value: "# Write your Python code here\nimport turtle\n\nt = turtle.Turtle()\nfor i in range(4):\n  print(i)\n  t.forward(100)\n  t.right(90)\n"
+    value: "# Write your Python code here\nfrom turtle import *\n\nforward(100)\n"
 });
 
 
